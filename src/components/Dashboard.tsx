@@ -13,12 +13,14 @@ import {
   TrendingUp,
   DollarSign,
   Package,
-  LogOut
+  LogOut,
+  Download
 } from 'lucide-react';
 import ProductCatalog from './ProductCatalog';
 import CustomerManagement from './CustomerManagement';
 import QuoteBuilder from './QuoteBuilder';
 import AdminPanel from './AdminPanel';
+import { generateDashboardReportPDF, DashboardData } from '@/lib/pdfUtils';
 
 interface DashboardProps {
   userRole: string;
@@ -51,6 +53,34 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole, onLogout }) => {
     }
   };
 
+  const handleExportDashboardPDF = async () => {
+    try {
+      const dashboardData: DashboardData = {
+        stats: {
+          totalProducts: 1547,
+          activeCustomers: 342,
+          quotesThisMonth: 128,
+          revenue: '$847K'
+        },
+        recentQuotes: recentQuotes.map(quote => ({
+          id: quote.id,
+          customer: quote.customer,
+          amount: quote.amount,
+          status: quote.status,
+          date: new Date().toLocaleDateString()
+        })),
+        userRole,
+        exportDate: new Date().toLocaleDateString()
+      };
+
+      await generateDashboardReportPDF(dashboardData);
+      alert('Dashboard report PDF generated successfully!');
+    } catch (error) {
+      console.error('Error generating dashboard PDF:', error);
+      alert('Error generating dashboard report. Please try again.');
+    }
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'products':
@@ -64,6 +94,15 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole, onLogout }) => {
       default:
         return (
           <div className="space-y-6">
+            {/* Export Button */}
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-slate-900">Dashboard Overview</h2>
+              <Button onClick={handleExportDashboardPDF} variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Export Report
+              </Button>
+            </div>
+            
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {stats.map((stat, index) => (

@@ -19,6 +19,7 @@ import {
   Trash2,
   CheckCircle
 } from 'lucide-react';
+import { generateQuotePDF, QuoteData } from '@/lib/pdfUtils';
 
 interface QuoteBuilderProps {
   userRole: string;
@@ -108,6 +109,65 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ userRole }) => {
   };
 
   const pricing = calculatePricing();
+
+  const generateQuoteNumber = () => {
+    const timestamp = Date.now().toString().slice(-6);
+    return `Q${timestamp}`;
+  };
+
+  const handleGeneratePDF = async () => {
+    try {
+      const customer = customers.find(c => c.id === selectedCustomer);
+      if (!customer) {
+        alert('Please select a customer first');
+        return;
+      }
+
+      const quoteNumber = generateQuoteNumber();
+      const quoteData: QuoteData = {
+        quoteNumber,
+        date: new Date().toLocaleDateString(),
+        customer: {
+          id: customer.id,
+          name: customer.name,
+          tier: customer.tier,
+          discount: customer.discount,
+          address: 'Customer Address', // You can expand this with real data
+          email: 'customer@email.com', // You can expand this with real data
+          phone: '(555) 123-4567' // You can expand this with real data
+        },
+        project: {
+          name: projectName || 'Unnamed Project',
+          notes: notes
+        },
+        items: pricing.items.map(item => ({
+          id: item.id,
+          name: item.name,
+          basePrice: item.basePrice,
+          quantity: item.quantity,
+          unit: item.unit,
+          lineTotal: item.lineTotal,
+          discountAmount: item.discountAmount,
+          netPrice: item.netPrice
+        })),
+        pricing: {
+          subtotal: pricing.subtotal,
+          discount: pricing.discount,
+          freight: pricing.freight,
+          tax: pricing.tax,
+          total: pricing.total
+        },
+        userRole,
+        createdBy: `${userRole} User`
+      };
+
+      await generateQuotePDF(quoteData);
+      alert('PDF generated successfully!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF. Please try again.');
+    }
+  };
 
   const renderStep = () => {
     switch (currentStep) {
@@ -345,7 +405,11 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ userRole }) => {
                   </div>
 
                   <div className="flex gap-4 pt-4">
-                    <Button className="flex-1">
+                    <Button 
+                      className="flex-1"
+                      onClick={handleGeneratePDF}
+                      disabled={quoteItems.length === 0}
+                    >
                       <Download className="h-4 w-4 mr-2" />
                       Generate PDF
                     </Button>
