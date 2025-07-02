@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, Grid, List, Plus } from 'lucide-react';
+import { Search, Filter, Grid, List, Plus, Download } from 'lucide-react';
+import { generateProductCatalogPDF, ProductData } from '@/lib/pdfUtils';
 
 interface ProductCatalogProps {
   userRole: string;
@@ -101,11 +102,35 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ userRole }) => {
     return { text: 'Critical', color: 'bg-red-100 text-red-800' };
   };
 
+  const handleExportProductsPDF = async () => {
+    try {
+      const productData: ProductData[] = filteredProducts.map(product => ({
+        id: product.id,
+        name: product.name,
+        basePrice: product.basePrice,
+        unit: 'per 1000ft',
+        category: product.category,
+        description: `${product.voltage} • ${product.material} • ${product.gauge}`,
+        inStock: product.stock
+      }));
+
+      await generateProductCatalogPDF(productData);
+      alert('Product catalog PDF generated successfully!');
+    } catch (error) {
+      console.error('Error generating product catalog PDF:', error);
+      alert('Error generating product catalog. Please try again.');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-slate-900">Product Catalog</h2>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleExportProductsPDF}>
+            <Download className="h-4 w-4 mr-2" />
+            Export PDF
+          </Button>
           <Button
             variant={viewMode === 'grid' ? 'default' : 'outline'}
             size="sm"

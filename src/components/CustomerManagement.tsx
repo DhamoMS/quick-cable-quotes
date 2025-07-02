@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, Plus, Edit, Users, Building, MapPin, Phone, Mail } from 'lucide-react';
+import { Search, Plus, Edit, Users, Building, MapPin, Phone, Mail, Download } from 'lucide-react';
+import { generateCustomerListPDF, CustomerData } from '@/lib/pdfUtils';
 
 interface CustomerManagementProps {
   userRole: string;
@@ -122,17 +123,43 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ userRole }) => 
     return matchesSearch && matchesTier;
   });
 
+  const handleExportCustomersPDF = async () => {
+    try {
+      const customerData: CustomerData[] = filteredCustomers.map(customer => ({
+        id: customer.id,
+        name: customer.name,
+        tier: customer.tier,
+        discount: customer.discount,
+        email: customer.email,
+        phone: customer.phone,
+        totalQuotes: customer.totalOrders,
+        totalValue: customer.yearlyVolume
+      }));
+
+      await generateCustomerListPDF(customerData);
+      alert('Customer directory PDF generated successfully!');
+    } catch (error) {
+      console.error('Error generating customer PDF:', error);
+      alert('Error generating customer directory. Please try again.');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-slate-900">Customer Management</h2>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Customer
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExportCustomersPDF}>
+            <Download className="h-4 w-4 mr-2" />
+            Export PDF
+          </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Customer
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Add New Customer</DialogTitle>
@@ -198,6 +225,7 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ userRole }) => 
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Filters */}
